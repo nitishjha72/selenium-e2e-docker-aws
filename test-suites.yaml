@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+
+  flight-reservation:
+    image: nitishjha72/selenium-e2e-docker-aws
+    environment:
+      - BROWSER=${BROWSER}
+      - HUB_HOST=hub
+      - TEST_SUITE=flight-reservation.xml
+      - THREAD_COUNT=3
+    volumes:
+      - ./output/flight-reservation:/home/selenium-docker/test-output
+
+  vendor-portal:
+    image: nitishjha72/selenium-e2e-docker-aws
+    environment:
+      - BROWSER=${BROWSER}
+      - HUB_HOST=hub
+      - TEST_SUITE=vendor-portal.xml
+      - THREAD_COUNT=3
+    volumes:
+      - ./output/vendor-portal:/home/selenium-docker/test-output
