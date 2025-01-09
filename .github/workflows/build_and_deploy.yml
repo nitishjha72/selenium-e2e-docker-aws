@@ -1,0 +1,35 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_push_image_to_artifactory:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '21'
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Build Docker image
+        run: docker build -t nitishjha72/selenium-e2e-docker-aws:${{ github.sha }} -t nitishjha72/selenium-e2e-docker-aws:latest .
+        working-directory: .
+
+      - name: Log in to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push nitishjha72/selenium-e2e-docker-aws:${{ github.sha }}
+          docker push nitishjha72/selenium-e2e-docker-aws:latest

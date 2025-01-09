@@ -1,0 +1,54 @@
+name: Run Functional Tests
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types:
+      - completed
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '21'
+
+      - name: Start Grid
+        run: docker-compose -f grid.yaml up --scale ${{ matrix.browser }}=2 -d
+
+      - name: Run Tests
+        run: |
+          docker-compose -f test-suites.yaml pull
+          BROWSER=${{ matrix.browser }} docker-compose -f test-suites.yaml up
+          if [ -f output/flight-reservation/testng-failed.xml ] || [ -f output/vendor-portal/testng-failed.xml ]; then
+            echo "Failed tests found"
+            exit 1
+          fi
+
+      - name: Archive test reports
+        if: always()
+        run: |
+          docker-compose -f grid.yaml down
+          docker-compose -f test-suites.yaml down
+          mkdir -p artifacts
+          cp -r output/flight-reservation artifacts/
+          cp -r output/vendor-portal artifacts/
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: artifacts/
+          retention-days: 5
